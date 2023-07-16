@@ -236,3 +236,93 @@ total, err := engine.Where("id >?", 1).Count(user)
 has, err = testEngine.Where("name = ?", "test1").Exist(&RecordExist{})
 // SELECT * FROM record_exist WHERE name = ? LIMIT 1
 ```
+
+- lterate Iterate 方法提供逐条执行查询到的记录的方法，他所能使用的条件和 Find 方法完全相同
+
+```go
+err := engine.Where("age > ? or name=?)", 30, "xlw").Iterate(new(Userinfo), func(i int, bean interface{})error{
+    user := bean.(*Userinfo)
+    //do somthing use i and user
+})
+```
+
+- join 连接查询
+
+```go
+Join(string,interface{},string)
+
+第一个参数为连接类型，当前支持INNER, LEFT OUTER, CROSS中的一个值， 第二个参数为string类型的表名，表对应的结构体指针或者为两个值的[]string，表示表名和别名， 第三个参数为连接条件
+
+type Group struct {
+	Id int64
+	Name string
+}
+
+type User struct {
+	Id int64
+	Name string
+	GroupId int64 `xorm:"index"`
+}
+
+type UserGroup struct {
+    User `xorm:"extends"`
+    Name string
+}
+
+func (UserGroup) TableName() string {
+	return "user"
+}
+
+users := make([]UserGroup, 0)
+engine.Join("INNER", "group", "group.id = user.group_id").Find(&users)
+
+// join还可以直接使用SQL
+
+users := make([]UserGroup, 0)
+engine.Sql("select user.*, group.name from user, group where user.group_id = group.id").Find(&users)
+```
+
+- Rows
+  Rows 方法和 Iterate 方法类似，提供逐条执行查询到的记录的方法，不过 Rows 更加灵活好用
+
+```go
+user := new(User)
+rows, err := engine.Where("id >?", 1).Rows(user)
+if err != nil {
+}
+defer rows.Close()
+for rows.Next() {
+    err = rows.Scan(user)
+    //...
+}
+```
+
+- xorm 事务
+
+```go
+func MyTransactionOps() error {
+    session := engine.NewSession()
+    defer session.Close()
+
+    // add Begin() before any action
+    if err := session.Begin(); err != nil {
+        return err
+    }
+
+    user1 := Userinfo{Username: "xiaoxiao", Departname: "dev", Alias: "lunny", Created: time.Now()}
+    if _, err := session.Insert(&user1); err != nil {
+        return err
+    }
+    user2 := Userinfo{Username: "yyy"}
+    if _, err = session.Where("id = ?", 2).Update(&user2); err != nil {
+        return err
+    }
+
+    if _, err = session.Exec("delete from userinfo where username = ?", user2.Username); err != nil {
+        return err
+    }
+
+    // add Commit() after all actions
+    return session.Commit()
+}
+```
