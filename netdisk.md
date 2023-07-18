@@ -326,3 +326,228 @@ func MyTransactionOps() error {
     return session.Commit()
 }
 ```
+
+### 3、看看接口
+
+```go
+//注册服务
+service core-api {
+	//用户的登录
+	@handler UserLogin
+	post /user/login(LoginRequest) returns(LoginResponse)
+	//用户的详情
+	@handler UserDetail
+	get /user/detail(UserDetailRequest) returns(UserDetailResponse)
+	//验证码发送
+	@handler  MailCodeSend
+	post /mail/code/send(MailCodeSendRequest) returns(MailCodeSendResponse)
+	//用户注册
+	@handler UserRegister
+	post /user/register(UserRegisterRequest) returns(UserRegisterResponse)
+	//获取资源详细信息
+	@handler ShareBasicDetail
+	get /share/basic/detail (ShareBasicDetailRequest) returns (ShareBasicDetailResponse)
+}
+
+@server(
+	middleware: Auth
+)
+
+service core-api{
+	//文件上传
+	@handler FileUpload
+	post /file/upload(FileUploadRequest) returns(FileUploadResponse)
+	//用户文件的关联存储
+	@handler UserRepositorySave
+	post /user/repository/save(UserRepositorySaveRequest) returns(UserRepositorySaveResponse)
+	//用户文件列表
+	@handler UserFileList
+	get /uer/file/list(UserFileListRequest) returns(UserFileListResponse)
+	//用户的名称修改
+	@handler UserFileNameUpdate
+	post /user/file/name/update(UserFileNameUpdateRequest) returns(UserFileNameUpdateResponse)
+	//用户文件夹创建
+	@handler UserFileFolderCreate
+	post /user/folder/create (UserFileFolderCreateRequest) returns (UserFileFolderCreateResponse)
+	//用户文件的删除
+	@handler UserFileDetele
+	delete /user/file/delete(UserFileDeleteRequest) returns (UserFileDeleteResponse)
+	//文件移动
+	@handler UserFileMove
+	put /user/file/move (UserFileMoveRequest) returns (UserFileMoveResponse)
+	//创建分享记录
+	@handler ShareBasicCreate
+	post /share/basic/create(ShareBasicCreateRequest) returns(ShareBasicCreateResponse)
+	//分享文件资源的保存
+	@handler ShareBasicSave
+	post /share/basic/save (ShareBasicSaveRequest) returns (ShareBasicSaveResponse)
+	// 刷新Authorization
+	@handler RefreshAuthorization
+	post /refresh/authorization (RefreshAuthorizationRequest) returns (RefreshAuthorizationResponse)
+}
+
+//刷新Token的token
+type RefreshAuthorizationRequest{}
+type RefreshAuthorizationResponse {
+	Token        string `json:"token"`
+	RefreshToken string `json:"refresh_token"`
+}
+//分享文件资源保存
+type ShareBasicSaveRequest {
+	RepositoryIdentity string `json:"repository_identity"`
+	ParentId           int64  `json:"parent_id"`
+}
+type ShareBasicSaveResponse {
+	Identity string `json:"identity"`
+}
+//获取资源详情 这里没有登录的用户也可以获取资源的详情
+type ShareBasicDetailRequest {
+	Identity string `json:"identity"`
+}
+type ShareBasicDetailResponse {
+	Name               string `json:"name"`
+	Ext                string `json:"ext"`
+	Size               int64  `json:"size"`
+	Path               string `json:"path"`
+	RepositoryIdentity string `json:"repository_identity"`
+}
+//创建文件分享
+type ShareBasicCreateRequest {
+	UserRepositoryIdentity string `json:"user_repository_identity"`
+	ExpiredTime            int64  `json:"expired_time"`
+}
+type ShareBasicCreateResponse {
+	Identity string `json:"identity"`
+}
+//文件移动
+type UserFileMoveRequest {
+	Identity       string `json:"identity"`
+	ParentIdentity string `json:"parent_identity"`
+}
+type UserFileMoveResponse {
+	Message string `json:"message"`
+}
+//用户文件删除
+type UserFileDeleteRequest {
+	Identity string `json:"identity"`
+}
+
+type UserFileDeleteResponse {
+	Message string `json:"message"`
+}
+
+//用户文件夹创建
+type UserFileFolderCreateRequest {
+	ParentId int64  `json:"parent_id"`
+	Name     string `json:"name"`
+}
+
+type UserFileFolderCreateResponse {
+	Identity string `json:"identity"`
+	Message  string `json:"message"`
+}
+//用户文件名称修改
+type UserFileNameUpdateRequest {
+	Identity string `json:"identity"`
+	Name     string `json:"name"`
+}
+
+type UserFileNameUpdateResponse {
+	Message string `json:"message"`
+}
+
+//用户文件列表
+type UserFileListRequest {
+	Id   int64 `json:"id,optional"`
+	Page int64 `json:"id,optional"`
+	Size int64 `json:"size,optional"`
+}
+type UserFileListResponse {
+	List  []*UserFile `json:"list"`
+	Count int64       `json:"count"`
+}
+
+type UserFile {
+	Id                 int64  `json:"id"`
+	Name               string `json:"name"`
+	Size               int64  `json:"size"`
+	Identity           string `json:"identity"`
+	RepositoryIdentity string `json:"repository_identity"`
+	Ext                string `json:"ext"`
+	Path               string `json:"path"`
+}
+//用户关联存储
+type UserRepositorySaveRequest {
+	ParentId           int64  `json:"parent_id"`
+	RepositoryIdentity string `json:"repository_identity"`
+	Ext                string `json:"ext"`
+	Name               string `json:"name"`
+}
+
+type UserRepositorySaveResponse {
+	Message  string `json:"message"`
+	Identity string `json:"identity"`
+}
+
+//文件上传
+type FileUploadRequest {
+	Hash string `json:"hash,optional"`
+	Name string `json:"name,optional"`
+	Ext  string `json:"ext,optional"`
+	Size int64  `json:"size,optional"`
+	Path string `json:"path,optional"`
+}
+
+type FileUploadResponse {
+	Message  string `json:"message"`
+	Identity string `json:"identity"`
+	Ext      string `json:"ext"`
+	Name     string `json:"name"`
+}
+//用户登录
+type LoginRequest {
+	Name     string `json:"name"`
+	Password string `json:"password"`
+}
+
+type LoginResponse {
+	Token        string `json:"token"`
+	RefleshToken string `json:"reflesh_token"`
+}
+
+type UserDetailRequest {
+	Identity string `json:"identity"`
+}
+
+type UserDetailResponse {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+//邮箱验证码发送
+type MailCodeSendRequest {
+	Email string `json:"email"`
+}
+
+type MailCodeSendResponse {
+	Message string `json:"message"`
+}
+
+//用户注册
+type UserRegisterRequest {
+	//用户名
+	Name string `json:"name"`
+	//密码
+	Password string `json:"password"`
+	//邮箱
+	Email string `json:"email"`
+	//验证码
+	Code string `json:"code"`
+}
+
+type UserRegisterResponse {
+	//消息
+	Message string `json:"message"`
+}
+
+```
